@@ -32,7 +32,9 @@ export async function initializeGraphView(context: vscode.ExtensionContext) {
         <html>
         <head>
             <script src="${cytoscapePath}"></script>
-            <style>#graph-container { width: 100%; height: 100vh; }</style>
+            <style>
+                #graph-container { width: 100%; height: 100vh; }
+            </style>
         </head>
         <body>
             <div id="graph-container"></div>
@@ -40,10 +42,32 @@ export async function initializeGraphView(context: vscode.ExtensionContext) {
                 const vscode = acquireVsCodeApi();
                 const cy = cytoscape({
                     container: document.getElementById('graph-container'),
-                    elements: ${JSON.stringify([...graphData.nodes, ...graphData.edges])},
+                    elements: ${JSON.stringify({
+                        nodes: graphData.nodes,
+                        edges: graphData.edges
+                    })},
                     style: [
-                        { selector: 'node', style: { 'background-color': 'blue', 'label': 'data(label)', 'text-valign': 'center', 'color': 'white' } },
-                        { selector: 'edge', style: { 'width': 2, 'line-color': 'gray', 'target-arrow-shape': 'triangle', 'target-arrow-color': 'gray' } }
+                        { selector: 'node', style: { 'background-color': 'gray', 'label': 'data(label)', 'text-valign': 'top', 'color': 'white' } },
+                        { selector: 'edge', style: {
+                            'width': 2,
+                            'line-color': '#666',
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-color': '#666',
+                            'arrow-scale': 1.5,
+                            'curve-style': 'bezier'
+                        }},
+                        { selector: 'node.highlight', style: {
+                            'background-color': '#FFA500',
+                            'border-width': 2,
+                            'border-color': '#FF4500',
+                            'border-opacity': 1
+                        }},
+                        { selector: 'edge.highlight', style: {
+                            'line-color': '#FF4500',
+                            'target-arrow-color': '#FF4500',
+                            'width': 3,
+                            'z-index': 9999
+                        }}
                     ],
                     layout: { name: 'cose' }
                 });
@@ -80,6 +104,28 @@ export async function initializeGraphView(context: vscode.ExtensionContext) {
                     vscode.postMessage({ command: 'log', text: 'Edge tapped: ' + JSON.stringify(edgeData) });
                     vscode.postMessage({ command: 'showEdgeDetails', edgeData: edgeData });
                 });
+
+                cy.on('mouseover', 'node', function(evt) {
+    const node = evt.target;
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+
+    console.log('Mouse over node:', node.id());
+    node.addClass('highlight');
+    connectedNodes.addClass('highlight');
+    connectedEdges.addClass('highlight');
+});
+
+cy.on('mouseout', 'node', function(evt) {
+    const node = evt.target;
+    const connectedEdges = node.connectedEdges();
+    const connectedNodes = connectedEdges.connectedNodes();
+
+    console.log('Mouse out from node:', node.id());
+    node.removeClass('highlight');
+    connectedNodes.removeClass('highlight');
+    connectedEdges.removeClass('highlight');
+});
             </script>
         </body>
         </html>
